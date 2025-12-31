@@ -42,7 +42,6 @@ class Rule:
         Returns:
             bool: True if self is more precise
         """
-        # czy regula jest bardziej szczegolowa od drugiej
         for label in self.conditions.keys():
             if self.conditions[label] == True and other.conditions[label] != True:
                 return False
@@ -157,7 +156,7 @@ class AQ:
         stopAlgorithm = False
         while not stopAlgorithm:
             testSetForRule = random.sample(self.testData, int(len(self.testData) / 40))
-            xs = 0  # pierwszy z brzegu przyklad ze zbioru niepokrytych regul
+            xs = 0  # first of uncovered rules
             if self.mode == "unordered":
                 negativeLabelIndexes = [
                     i
@@ -180,50 +179,50 @@ class AQ:
                 for rule1 in star:
                     for rule2 in S:
                         complexProduct.append(rule1 * rule2)
-                # pozostawienie najbardziej ogolnych regul
-                mostGenericComplexSet = []
+                # leaving most general complexes
+                mostGeneralComplexSet = []
                 for i, rule1 in enumerate(complexProduct):
                     coveredFlag = False
                     for j, rule2 in enumerate(complexProduct):
                         if rule1.includesIn(rule2) and not rule2.includesIn(rule1):
                             coveredFlag = True
-                    if not coveredFlag and rule1 not in mostGenericComplexSet:
-                        mostGenericComplexSet.append(rule1)
-                # wybor najlepszych kompleksow
-                mostGenericComplexSetIndexes = [
-                    i for i, x in enumerate(mostGenericComplexSet)
+                    if not coveredFlag and rule1 not in mostGeneralComplexSet:
+                        mostGeneralComplexSet.append(rule1)
+                # selecting m best complexes
+                mostGeneralComplexSetIndexes = [
+                    i for i, x in enumerate(mostGeneralComplexSet)
                 ]
                 if not self.modified:
-                    # klasyczny algorytm AQ - ocena regul na podstawie liczby pokrytych przykladow ze zbioru trenujacego
-                    mostGenericComplexSetIndexes.sort(
+                    # classic AQ algorithm - evaluation of rules based on number of covered examples from training set
+                    mostGeneralComplexSetIndexes.sort(
                         key=lambda i: self.countCoveredExamples(
-                            mostGenericComplexSet[i], uncoveredExamples
+                            mostGeneralComplexSet[i], uncoveredExamples
                         ),
                         reverse=True,
                     )
-                    # test jednostkowy - dodatkowa regula, ktora w przypadku kompleksow o jednakowej jakosci wybiera ten, ktory
-                    # w gwiezdzie wystepuje jako ostatni
+                    # unit testing - additional rule that in case of complexes with the same quality chooses the one that
+                    # appears last in the star
                     if self.unitTesting:
-                        mostGenericComplexSetIndexes.sort(
+                        mostGeneralComplexSetIndexes.sort(
                             key=lambda i: (self.countCoveredExamples(
-                                mostGenericComplexSet[i], uncoveredExamples
+                                mostGeneralComplexSet[i], uncoveredExamples
                             ), i),
                             reverse=True,
                         )
 
                 else:
-                    # zmodyfikowany algorytm AQ - ocena regul na podstawie liczby pokrytych przykladow z odrebnego zbioru walidacyjnego
-                    mostGenericComplexSetIndexes.sort(
+                    # modified AQ algorithm - evaluation of rules based on number of covered examples from separate validation set
+                    mostGeneralComplexSetIndexes.sort(
                         key=lambda i: self.countCoveredExamples(
-                            mostGenericComplexSet[i], testSetForRule
+                            mostGeneralComplexSet[i], testSetForRule
                         ),
                         reverse=True,
                     )
                 S = [
                     x
-                    for i, x in enumerate(mostGenericComplexSet)
+                    for i, x in enumerate(mostGeneralComplexSet)
                     if i
-                    in mostGenericComplexSetIndexes[
+                    in mostGeneralComplexSetIndexes[
                         0 : (self.m if xn != negativeLabelIndexes[-1] else 1)
                     ]
                 ]
@@ -233,7 +232,7 @@ class AQ:
             uncoveredExamples = [
                 x for x in uncoveredExamples if not newRule.coversExample(x)
             ]
-            # gdy wszystkie przyklady pokryte, zakoncz algorytm
+            # all examples are covered, stop algorithm
             if len(uncoveredExamples) == 0:
                 stopAlgorithm = True
                 self.evaluatedRules = self.rules
